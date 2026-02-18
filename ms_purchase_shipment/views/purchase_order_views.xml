@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Shipments smart button to Purchase Order form -->
+    <record id="purchase_order_form_inherit_shipment" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.shipment</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button type="object"
+                        name="action_view_shipments"
+                        class="oe_stat_button"
+                        icon="fa-ship"
+                        invisible="shipment_count == 0">
+                    <field name="shipment_count"
+                           widget="statinfo"
+                           string="Shipments"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

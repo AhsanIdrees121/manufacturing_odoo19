@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Tree View -->
+    <record id="purchase_shipment_tree_view" model="ir.ui.view">
+        <field name="name">purchase.shipment.list</field>
+        <field name="model">purchase.shipment</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Shipments"
+                  decoration-danger="state == 'overdue'"
+                  multi_edit="1">
+                <field name="name" decoration-bf="1"/>
+                <field name="vendor_id"/>
+                <field name="carrier_name"/>
+                <field name="dispatch_date"/>
+                <field name="eta"/>
+                <field name="arrival_date" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'pending'"
+                       decoration-primary="state == 'enroute'"
+                       decoration-danger="state == 'overdue'"
+                       decoration-success="state in ('arrived', 'cleared')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="purchase_shipment_form_view" model="ir.ui.view">
+        <field name="name">purchase.shipment.form</field>
+        <field name="model">purchase.shipment</field>
+        <field name="arch" type="xml">
+            <form string="Purchase Shipment">
+                <header>
+                    <button name="action_confirm"
+                            string="Confirm"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"
+                            data-hotkey="q"/>
+                    <button name="action_dispatch"
+                            string="Dispatch"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'pending'"
+                            data-hotkey="w"/>
+                    <button name="action_arrive"
+                            string="Mark Arrived"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state not in ('enroute', 'overdue')"
+                            data-hotkey="e"/>
+                    <button name="action_clear"
+                            string="Clear"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'arrived'"
+                            data-hotkey="r"/>
+                    <button name="action_reset_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state in ('draft', 'cleared')"
+                            groups="purchase.group_purchase_manager"
+                            data-hotkey="z"/>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,pending,enroute,arrived,cleared"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object"
+                                name="action_view_purchase_orders"
+                                class="oe_stat_button"
+                                icon="fa-file-text-o"
+                                invisible="purchase_count == 0">
+                            <field name="purchase_count"
+                                   widget="statinfo"
+                                   string="Purchase Orders"/>
+                        </button>
+                        <button type="object"
+                                name="action_view_pickings"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="picking_count == 0"
+                                groups="stock.group_stock_user">
+                            <field name="picking_count"
+                                   widget="statinfo"
+                                   string="Receipts"/>
+                        </button>
+                        <button type="object"
+                                name="action_view_invoices"
+                                class="oe_stat_button"
+                                icon="fa-pencil-square-o"
+                                invisible="invoice_count == 0"
+                                groups="account.group_account_invoice">
+                            <field name="invoice_count"
+                                   widget="statinfo"
+                                   string="Vendor Bills"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="vendor_id"
+                                   context="{'res_partner_search_mode': 'supplier'}"
+                                   readonly="state != 'draft'"/>
+                            <field name="carrier_name"
+                                   readonly="state == 'cleared'"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="dispatch_date"
+                                   readonly="state in ('arrived', 'cleared')"/>
+                            <field name="eta"
+                                   readonly="state in ('arrived', 'cleared')"/>
+                            <field name="arrival_date"
+                                   readonly="state != 'arrived'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Shipment Lines" name="lines">
+                            <field name="purchase_ids"
+                                   widget="many2many_tags"
+                                   domain="[('partner_id', '=', vendor_id), ('state', '=', 'purchase')]"
+                                   readonly="state == 'cleared'"
+                                   options="{'no_create': True}"/>
+                            <field name="shipment_line_ids"
+                                   readonly="state == 'cleared'">
+                                <list editable="bottom">
+                                    <field name="purchase_order_id"
+                                           domain="[('id', 'in', parent.purchase_ids)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="po_line_id"
+                                           domain="[('order_id', '=', purchase_order_id)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="qty_ordered"/>
+                                    <field name="qty_shipped"/>
+                                    <field name="uom_id" readonly="1"/>
+                                    <field name="price_unit" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"
+                                   placeholder="Add internal notes here..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="purchase_shipment_search_view" model="ir.ui.view">
+        <field name="name">purchase.shipment.search</field>
+        <field name="model">purchase.shipment</field>
+        <field name="arch" type="xml">
+            <search string="Purchase Shipments">
+                <field name="name"/>
+                <field name="vendor_id"/>
+                <field name="carrier_name"/>
+                <separator/>
+                <filter name="filter_draft"
+                        string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_pending"
+                        string="Pending Dispatch"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_enroute"
+                        string="Enroute"
+                        domain="[('state', '=', 'enroute')]"/>
+                <filter name="filter_overdue"
+                        string="Overdue"
+                        domain="[('state', '=', 'overdue')]"/>
+                <filter name="filter_arrived"
+                        string="Arrived"
+                        domain="[('state', '=', 'arrived')]"/>
+                <filter name="filter_cleared"
+                        string="Cleared"
+                        domain="[('state', '=', 'cleared')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_vendor"
+                            string="Vendor"
+                            context="{'group_by': 'vendor_id'}"/>
+                    <filter name="group_carrier"
+                            string="Carrier"
+                            context="{'group_by': 'carrier_name'}"/>
+                    <filter name="group_state"
+                            string="State"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_purchase_shipment" model="ir.actions.act_window">
+        <field name="name">Shipments</field>
+        <field name="res_model">purchase.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="purchase_shipment_search_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new shipment to track your purchases in transit.
+            </p>
+            <p>
+                Link purchase orders, set dispatch dates and ETAs,
+                and track your shipments from dispatch to clearance.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_purchase_shipment"
+              name="Shipments"
+              parent="purchase.menu_procurement_management"
+              action="action_purchase_shipment"
+              sequence="10"/>
+
+</odoo>

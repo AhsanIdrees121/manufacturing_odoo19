@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_shipment_user,purchase.shipment user,model_purchase_shipment,purchase.group_purchase_user,1,1,1,0
+access_purchase_shipment_manager,purchase.shipment manager,model_purchase_shipment,purchase.group_purchase_manager,1,1,1,1
+access_purchase_shipment_stock_manager,purchase.shipment stock manager,model_purchase_shipment,stock.group_stock_manager,1,1,0,0
+access_purchase_shipment_line_user,purchase.shipment.line user,model_purchase_shipment_line,purchase.group_purchase_user,1,1,1,0
+access_purchase_shipment_line_manager,purchase.shipment.line manager,model_purchase_shipment_line,purchase.group_purchase_manager,1,1,1,1
+access_purchase_shipment_line_stock_manager,purchase.shipment.line stock manager,model_purchase_shipment_line,stock.group_stock_manager,1,1,0,0
