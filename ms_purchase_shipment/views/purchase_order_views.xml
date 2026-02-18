@@ -18,6 +18,53 @@
                            string="Shipments"/>
                 </button>
             </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_create_shipment"
+                        string="Create Shipment"
+                        type="object"
+                        invisible="state != 'purchase' or shipment_count > 0"
+                        data-hotkey="x"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add Shipment Status column to Purchase Order tree view -->
+    <record id="purchase_order_tree_inherit_shipment" model="ir.ui.view">
+        <field name="name">purchase.order.list.inherit.shipment</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="shipment_status"
+                       string="Shipment Status"
+                       widget="badge"
+                       optional="show"
+                       decoration-info="shipment_status == 'draft'"
+                       decoration-warning="shipment_status == 'pending'"
+                       decoration-primary="shipment_status == 'enroute'"
+                       decoration-danger="shipment_status == 'overdue'"
+                       decoration-success="shipment_status in ('arrived', 'cleared')"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add Shipment Status column to Purchase Order KPI tree view -->
+    <record id="purchase_order_kpis_tree_inherit_shipment" model="ir.ui.view">
+        <field name="name">purchase.order.kpis.list.inherit.shipment</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="shipment_status"
+                       string="Shipment Status"
+                       widget="badge"
+                       optional="show"
+                       decoration-info="shipment_status == 'draft'"
+                       decoration-warning="shipment_status == 'pending'"
+                       decoration-primary="shipment_status == 'enroute'"
+                       decoration-danger="shipment_status == 'overdue'"
+                       decoration-success="shipment_status in ('arrived', 'cleared')"/>
+            </xpath>
         </field>
     </record>
 

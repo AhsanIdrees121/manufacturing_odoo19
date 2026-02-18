@@ -7,6 +7,10 @@ class PurchaseShipment(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'Purchase Shipment'
     _order = 'name desc'
+    _sql_constraints = [
+        ('purchase_id_unique', 'UNIQUE(purchase_id)',
+         'A shipment already exists for this purchase order. You cannot create another one.'),
+    ]
 
     name = fields.Char(
         string='Reference',
@@ -28,12 +32,10 @@ class PurchaseShipment(models.Model):
         string='Carrier',
         tracking=True,
     )
-    purchase_ids = fields.Many2many(
+    purchase_id = fields.Many2one(
         'purchase.order',
-        'purchase_shipment_purchase_order_rel',
-        'shipment_id',
-        'purchase_order_id',
-        string='Purchase Orders',
+        string='Purchase Order',
+        tracking=True,
     )
     shipment_line_ids = fields.One2many(
         'purchase.shipment.line',
@@ -78,10 +80,6 @@ class PurchaseShipment(models.Model):
     )
 
     # Computed fields for smart buttons
-    purchase_count = fields.Integer(
-        string='Purchase Count',
-        compute='_compute_purchase_count',
-    )
     picking_ids = fields.Many2many(
         'stock.picking',
         string='Receipts',
@@ -101,22 +99,41 @@ class PurchaseShipment(models.Model):
         compute='_compute_invoice_ids',
     )
 
-    @api.depends('purchase_ids')
-    def _compute_purchase_count(self):
-        for shipment in self:
-            shipment.purchase_count = len(shipment.purchase_ids)
-
-    @api.depends('purchase_ids.picking_ids')
+    @api.depends('purchase_id.picking_ids')
     def _compute_picking_ids(self):
         for shipment in self:
-            shipment.picking_ids = shipment.purchase_ids.picking_ids
+            shipment.picking_ids = shipment.purchase_id.picking_ids
             shipment.picking_count = len(shipment.picking_ids)
 
-    @api.depends('purchase_ids.invoice_ids')
+    @api.depends('purchase_id.invoice_ids')
     def _compute_invoice_ids(self):
         for shipment in self:
-            shipment.invoice_ids = shipment.purchase_ids.invoice_ids
+            shipment.invoice_ids = shipment.purchase_id.invoice_ids
             shipment.invoice_count = len(shipment.invoice_ids)
+
+    @api.onchange('purchase_id')
+    def _onchange_purchase_id(self):
+        """Auto-populate shipment lines from selected purchase order."""
+        if not self.purchase_id:
+            self.shipment_line_ids = [fields.Command.clear()]
+            return
+        self.vendor_id = self.purchase_id.partner_id
+        existing_po_line_ids = set(self.shipment_line_ids.mapped('po_line_id').ids)
+        new_lines = []
+        for line in self.purchase_id.order_line:
+            if line.display_type or line.id in existing_po_line_ids:
+                continue
+            new_lines.append(fields.Command.create({
+                'purchase_order_id': self.purchase_id.id,
+                'po_line_id': line.id,
+                'qty_shipped': line.product_qty,
+            }))
+        # Remove lines that don't belong to current PO
+        for line in self.shipment_line_ids:
+            if line.purchase_order_id != self.purchase_id:
+                new_lines.append(fields.Command.delete(line.id))
+        if new_lines:
+            self.update({'shipment_line_ids': new_lines})
 
     @api.constrains('dispatch_date', 'eta')
     def _check_dates(self):
@@ -178,20 +195,15 @@ class PurchaseShipment(models.Model):
         if overdue_shipments:
             overdue_shipments.write({'state': 'overdue'})
 
-    def action_view_purchase_orders(self):
+    def action_view_purchase_order(self):
         self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id(
-            'purchase.purchase_rfq'
-        )
-        if len(self.purchase_ids) == 1:
-            action['views'] = [(
-                self.env.ref('purchase.purchase_order_form').id,
-                'form',
-            )]
-            action['res_id'] = self.purchase_ids.id
-        else:
-            action['domain'] = [('id', 'in', self.purchase_ids.ids)]
-        return action
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order',
+            'view_mode': 'form',
+            'res_id': self.purchase_id.id,
+            'views': [(self.env.ref('purchase.purchase_order_form').id, 'form')],
+        }
 
     def action_view_pickings(self):
         self.ensure_one()

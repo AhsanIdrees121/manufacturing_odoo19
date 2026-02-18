@@ -11,6 +11,7 @@
                   multi_edit="1">
                 <field name="name" decoration-bf="1"/>
                 <field name="vendor_id"/>
+                <field name="purchase_id"/>
                 <field name="carrier_name"/>
                 <field name="dispatch_date"/>
                 <field name="eta"/>
@@ -71,13 +72,13 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button type="object"
-                                name="action_view_purchase_orders"
+                                name="action_view_purchase_order"
                                 class="oe_stat_button"
                                 icon="fa-file-text-o"
-                                invisible="purchase_count == 0">
-                            <field name="purchase_count"
-                                   widget="statinfo"
-                                   string="Purchase Orders"/>
+                                invisible="not purchase_id">
+                            <div class="o_field_statinfo">
+                                <span class="o_stat_text">Purchase Order</span>
+                            </div>
                         </button>
                         <button type="object"
                                 name="action_view_pickings"
@@ -110,6 +111,10 @@
                             <field name="vendor_id"
                                    context="{'res_partner_search_mode': 'supplier'}"
                                    readonly="state != 'draft'"/>
+                            <field name="purchase_id"
+                                   domain="[('partner_id', '=', vendor_id), ('state', '=', 'purchase')]"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
                             <field name="carrier_name"
                                    readonly="state == 'cleared'"/>
                             <field name="company_id"
@@ -126,16 +131,11 @@
                     </group>
                     <notebook>
                         <page string="Shipment Lines" name="lines">
-                            <field name="purchase_ids"
-                                   widget="many2many_tags"
-                                   domain="[('partner_id', '=', vendor_id), ('state', '=', 'purchase')]"
-                                   readonly="state == 'cleared'"
-                                   options="{'no_create': True}"/>
                             <field name="shipment_line_ids"
-                                   readonly="state == 'cleared'">
+                                   readonly="1">
                                 <list editable="bottom">
                                     <field name="purchase_order_id"
-                                           domain="[('id', 'in', parent.purchase_ids)]"
+                                           domain="[('partner_id', '=', parent.vendor_id), ('state', '=', 'purchase')]"
                                            options="{'no_create': True}"/>
                                     <field name="po_line_id"
                                            domain="[('order_id', '=', purchase_order_id)]"
@@ -167,6 +167,7 @@
             <search string="Purchase Shipments">
                 <field name="name"/>
                 <field name="vendor_id"/>
+                <field name="purchase_id"/>
                 <field name="carrier_name"/>
                 <separator/>
                 <filter name="filter_draft"
@@ -192,6 +193,9 @@
                     <filter name="group_vendor"
                             string="Vendor"
                             context="{'group_by': 'vendor_id'}"/>
+                    <filter name="group_po"
+                            string="Purchase Order"
+                            context="{'group_by': 'purchase_id'}"/>
                     <filter name="group_carrier"
                             string="Carrier"
                             context="{'group_by': 'carrier_name'}"/>
@@ -214,8 +218,8 @@
                 Create a new shipment to track your purchases in transit.
             </p>
             <p>
-                Link purchase orders, set dispatch dates and ETAs,
-                and track your shipments from dispatch to clearance.
+                Link a purchase order, set dispatch dates and ETAs,
+                and track your shipment from dispatch to clearance.
             </p>
         </field>
     </record>
