@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  /my/home: shipment card in the vendor category               -->
+    <!-- ============================================================ -->
+    <template id="portal_my_home_shipment"
+              name="My Shipments"
+              customize_show="True"
+              inherit_id="portal.portal_my_home"
+              priority="30">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_vendor_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_vendor_category" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/ms_purchase_shipment/static/src/img/shipment.svg'"/>
+                <t t-set="title">My Shipments</t>
+                <t t-set="text">Track your assigned shipments</t>
+                <t t-set="url" t-value="'/my/shipments'"/>
+                <t t-set="placeholder_count" t-value="'shipment_count'"/>
+            </t>
+        </div>
+    </template>
+
+    <!-- ============================================================ -->
+    <!--  Breadcrumbs                                                  -->
+    <!-- ============================================================ -->
+    <template id="portal_my_home_menu_shipment"
+              name="Portal layout: shipment menu entries"
+              inherit_id="portal.portal_breadcrumbs"
+              priority="30">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'shipments' or page_name == 'shipment'"
+                t-attf-class="breadcrumb-item #{'active' if page_name == 'shipments' else ''}">
+                <a t-if="page_name == 'shipment'" t-attf-href="/my/shipments?{{ keep_query() }}">Shipments</a>
+                <t t-else="">Shipments</t>
+            </li>
+            <li t-if="page_name == 'shipment'" class="breadcrumb-item active">
+                <t t-esc="shipment.name"/>
+            </li>
+        </xpath>
+    </template>
+
+    <!-- ============================================================ -->
+    <!--  List page: /my/shipments                                     -->
+    <!-- ============================================================ -->
+    <template id="portal_my_shipments" name="My Shipments">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Shipments</t>
+            </t>
+
+            <t t-if="not shipments">
+                <p class="alert alert-warning">No shipments found.</p>
+            </t>
+            <t t-if="shipments" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Reference</th>
+                        <th>Vendor</th>
+                        <th>Carrier</th>
+                        <th class="text-end">ETA</th>
+                        <th class="text-end">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="shipments" t-as="shipment">
+                        <tr>
+                            <td>
+                                <a t-attf-href="/my/shipments/#{shipment.id}?{{ keep_query() }}">
+                                    <t t-esc="shipment.name"/>
+                                </a>
+                            </td>
+                            <td><t t-esc="shipment.vendor_id.name"/></td>
+                            <td><t t-esc="shipment.carrier_name or ''"/></td>
+                            <td class="text-end">
+                                <span t-if="shipment.eta" t-field="shipment.eta" t-options="{'widget': 'date'}"/>
+                            </td>
+                            <td class="text-end">
+                                <span t-attf-class="badge rounded-pill
+                                    #{'text-bg-info' if shipment.state == 'draft' else
+                                      'text-bg-warning' if shipment.state == 'pending' else
+                                      'text-bg-primary' if shipment.state == 'enroute' else
+                                      'text-bg-danger' if shipment.state == 'overdue' else
+                                      'text-bg-success' if shipment.state in ('arrived', 'cleared') else ''}">
+                                    <t t-esc="dict(shipment._fields['state'].selection).get(shipment.state)"/>
+                                </span>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================ -->
+    <!--  Detail page: /my/shipments/<id>                              -->
+    <!-- ============================================================ -->
+    <template id="portal_my_shipment_detail" name="Shipment Detail">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-12 col-md-6">
+                            <h3 class="mb-0"><t t-esc="shipment.name"/></h3>
+                        </div>
+                        <div class="col-12 col-md-6 text-md-end">
+                            <span t-attf-class="badge rounded-pill fs-6
+                                #{'text-bg-info' if shipment.state == 'draft' else
+                                  'text-bg-warning' if shipment.state == 'pending' else
+                                  'text-bg-primary' if shipment.state == 'enroute' else
+                                  'text-bg-danger' if shipment.state == 'overdue' else
+                                  'text-bg-success' if shipment.state in ('arrived', 'cleared') else ''}"
+                                id="shipment_state_badge">
+                                <t t-esc="dict(shipment._fields['state'].selection).get(shipment.state)"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-12 col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th class="text-muted">Vendor</th>
+                                    <td><t t-esc="shipment.vendor_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Carrier</th>
+                                    <td><t t-esc="shipment.carrier_name or '-'"/></td>
+                                </tr>
+                                <tr t-if="shipment.purchase_id">
+                                    <th class="text-muted">Purchase Order</th>
+                                    <td><t t-esc="shipment.purchase_id.name"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th class="text-muted">Dispatch Date</th>
+                                    <td>
+                                        <span t-if="shipment.dispatch_date" t-field="shipment.dispatch_date" t-options="{'widget': 'date'}"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Expected Arrival</th>
+                                    <td>
+                                        <span t-if="shipment.eta" t-field="shipment.eta" t-options="{'widget': 'date'}"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Actual Arrival</th>
+                                    <td>
+                                        <span t-if="shipment.arrival_date" t-field="shipment.arrival_date" t-options="{'widget': 'date'}"/>
+                                        <span t-else="">-</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- State update: one step forward / backward -->
+                    <div class="row mb-4" t-if="prev_state or next_state">
+                        <div class="col-12">
+                            <span class="fw-bold d-block mb-2">Update Status</span>
+                            <div class="d-flex gap-2">
+                                <form t-if="prev_state" t-attf-action="/my/shipments/#{shipment.id}/update_state" method="POST">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="new_state" t-att-value="prev_state"/>
+                                    <button type="submit" class="btn btn-outline-secondary">
+                                        <i class="fa fa-arrow-left me-1"/>
+                                        <t t-esc="prev_state_label"/>
+                                    </button>
+                                </form>
+                                <form t-if="next_state" t-attf-action="/my/shipments/#{shipment.id}/update_state" method="POST">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="new_state" t-att-value="next_state"/>
+                                    <button type="submit" class="btn btn-primary">
+                                        <t t-esc="next_state_label"/>
+                                        <i class="fa fa-arrow-right ms-1"/>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipment lines -->
+                    <h5>Shipment Lines</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty Ordered</th>
+                                    <th class="text-end">Qty Shipped</th>
+                                    <th>UoM</th>
+                                    <th class="text-end">Unit Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="shipment.shipment_line_ids" t-as="line">
+                                    <tr>
+                                        <td><t t-esc="line.product_id.display_name"/></td>
+                                        <td class="text-end"><t t-esc="line.qty_ordered"/></td>
+                                        <td class="text-end"><t t-esc="line.qty_shipped"/></td>
+                                        <td><t t-esc="line.uom_id.name"/></td>
+                                        <td class="text-end">
+                                            <span t-field="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': shipment.company_id.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr t-if="not shipment.shipment_line_ids">
+                                    <td colspan="5" class="text-muted text-center">No shipment lines.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

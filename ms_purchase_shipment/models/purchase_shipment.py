@@ -78,6 +78,11 @@ class PurchaseShipment(models.Model):
         default=lambda self: self.env.company,
         index=True,
     )
+    portal_user_id = fields.Many2one(
+        'res.users',
+        string='Portal User',
+        tracking=True,
+    )
 
     # Computed fields for smart buttons
     picking_ids = fields.Many2many(

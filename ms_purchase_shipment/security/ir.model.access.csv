@@ -5,3 +5,5 @@ access_purchase_shipment_stock_manager,purchase.shipment stock manager,model_pur
 access_purchase_shipment_line_user,purchase.shipment.line user,model_purchase_shipment_line,purchase.group_purchase_user,1,1,1,0
 access_purchase_shipment_line_manager,purchase.shipment.line manager,model_purchase_shipment_line,purchase.group_purchase_manager,1,1,1,1
 access_purchase_shipment_line_stock_manager,purchase.shipment.line stock manager,model_purchase_shipment_line,stock.group_stock_manager,1,1,0,0
+access_purchase_shipment_portal,purchase.shipment portal,model_purchase_shipment,base.group_portal,1,0,0,0
+access_purchase_shipment_line_portal,purchase.shipment.line portal,model_purchase_shipment_line,base.group_portal,1,0,0,0

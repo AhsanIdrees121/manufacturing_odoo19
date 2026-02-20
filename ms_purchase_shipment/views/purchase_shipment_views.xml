@@ -119,6 +119,9 @@
                                    readonly="state == 'cleared'"/>
                             <field name="company_id"
                                    groups="base.group_multi_company"/>
+                            <field name="portal_user_id"
+                                   domain="[('group_ids', 'in', %(base.group_portal)s)]"
+                                   options="{'no_create': True}"/>
                         </group>
                         <group>
                             <field name="dispatch_date"
@@ -131,9 +134,8 @@
                     </group>
                     <notebook>
                         <page string="Shipment Lines" name="lines">
-                            <field name="shipment_line_ids"
-                                   readonly="1">
-                                <list editable="bottom">
+                            <field name="shipment_line_ids">
+                                <list editable="bottom" create="0" write="0" delete="false">
                                     <field name="purchase_order_id"
                                            domain="[('partner_id', '=', parent.vendor_id), ('state', '=', 'purchase')]"
                                            options="{'no_create': True}"/>

@@ -14,5 +14,21 @@
             <field name="model_id" ref="model_purchase_shipment_line"/>
             <field name="domain_force">[('shipment_id.company_id', 'in', company_ids)]</field>
         </record>
+
+        <!-- Portal rule: shipment visible only to assigned portal user -->
+        <record id="purchase_shipment_portal_rule" model="ir.rule">
+            <field name="name">Purchase Shipment portal user</field>
+            <field name="model_id" ref="model_purchase_shipment"/>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+            <field name="domain_force">[('portal_user_id', '=', user.id)]</field>
+        </record>
+
+        <!-- Portal rule: shipment lines visible via shipment's portal user -->
+        <record id="purchase_shipment_line_portal_rule" model="ir.rule">
+            <field name="name">Purchase Shipment Line portal user</field>
+            <field name="model_id" ref="model_purchase_shipment_line"/>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+            <field name="domain_force">[('shipment_id.portal_user_id', '=', user.id)]</field>
+        </record>
     </data>
 </odoo>

@@ -19,13 +19,14 @@ Features:
 - Chatter integration for full audit trail
     """,
     'author': 'MountSol',
-    'depends': ['purchase_stock'],
+    'depends': ['purchase_stock', 'portal'],
     'data': [
         'security/purchase_shipment_security.xml',
         'security/ir.model.access.csv',
         'data/purchase_shipment_data.xml',
         'views/purchase_shipment_views.xml',
         'views/purchase_order_views.xml',
+        'views/portal_templates.xml',
     ],
     'installable': True,
     'application': False,
